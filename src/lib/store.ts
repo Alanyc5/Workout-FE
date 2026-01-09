@@ -8,6 +8,7 @@ interface WorkoutStore {
 
   // Auth state
   authCredentials: string | null;
+  currentUser: string | null;
   login: (user: string, pass: string) => void;
   logout: () => void;
   
@@ -26,11 +27,12 @@ export const useWorkoutStore = create<WorkoutStore>()(
       setActiveSessionId: (id) => set({ activeSessionId: id }),
 
       authCredentials: null,
+      currentUser: null,
       login: (user, pass) => {
         const token = btoa(`${user}:${pass}`);
-        set({ authCredentials: `Basic ${token}` });
+        set({ authCredentials: `Basic ${token}`, currentUser: user });
       },
-      logout: () => set({ authCredentials: null }),
+      logout: () => set({ authCredentials: null, currentUser: null }),
       
       sessionSets: [],
       setSessionSets: (sets) => set({ sessionSets: sets }),
@@ -46,7 +48,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
       name: 'workout-storage',
       partialize: (state) => ({ 
         activeSessionId: state.activeSessionId,
-        authCredentials: state.authCredentials
+        authCredentials: state.authCredentials,
+        currentUser: state.currentUser
       }), 
     }
   )

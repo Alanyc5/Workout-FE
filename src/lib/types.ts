@@ -1,5 +1,6 @@
 export interface Session {
   id: string;
+  userId: string;
   startAt: string;
   endAt: string | null;
   note: string | null;
