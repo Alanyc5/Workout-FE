@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Clock, ChevronRight, ArrowLeft, Languages } from 'lucide-react';
+import { Search, Plus, ChevronRight, ArrowLeft, Languages } from 'lucide-react';
 import { api } from '../lib/api';
 import { Exercise } from '../lib/types';
 
