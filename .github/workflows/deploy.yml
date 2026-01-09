@@ -35,6 +35,13 @@ jobs:
         env:
           VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
 
+      - name: List dist contents
+        run: |
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "Contents of dist/assets directory:"
+          ls -la dist/assets/ || echo "No assets directory"
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
