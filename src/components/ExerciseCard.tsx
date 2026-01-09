@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Copy } from 'lucide-react';
+import { Plus, Copy, Trash2 } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../lib/types';
 import { cn } from '../lib/utils'; // I need to create utils for clsx/tailwind-merge
 
@@ -10,6 +10,8 @@ interface ExerciseCardProps {
   onAddSet: () => void;
   onCopyLastSet?: () => void;
   onEditSet: (set: WorkoutSet) => void;
+  onDeleteSet?: (setId: string) => void;
+  onRemoveExercise?: () => void;
   canCopy: boolean;
   readOnly?: boolean;
 }
@@ -21,6 +23,8 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onAddSet,
   onCopyLastSet,
   onEditSet,
+  onDeleteSet,
+  onRemoveExercise,
   canCopy,
   readOnly
 }) => {
@@ -41,7 +45,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
             key={set.id}
             onClick={() => !readOnly && onEditSet(set)}
             className={cn(
-              "flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg", 
+              "flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg group", 
               !readOnly && "active:bg-gray-100 cursor-pointer"
             )}
           >
@@ -52,6 +56,18 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
               <span className="text-gray-400 mx-1">×</span>
               <span>{set.reps}</span>
             </div>
+            {!readOnly && onDeleteSet && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteSet(set.id);
+                }}
+                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
+                aria-label="Delete set"
+              >
+                <Trash2 size={16} />
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -73,6 +89,15 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           <Copy size={16} />
           Copy Last
         </button>
+        {sets.length === 0 && onRemoveExercise && (
+           <button 
+             onClick={onRemoveExercise}
+             className="w-12 bg-red-50 text-red-600 rounded-lg flex items-center justify-center active:bg-red-100 border border-red-100"
+             aria-label="Remove exercise"
+           >
+             <Trash2 size={18} />
+           </button>
+        )}
       </div>
       )}
     </div>

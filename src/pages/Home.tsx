@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Calendar, History, Loader2 } from 'lucide-react';
+import { Play, Calendar, History, Loader2, LogOut } from 'lucide-react';
 import { api } from '../lib/api';
 import { useWorkoutStore } from '../lib/store';
 import { Session } from '../lib/types';
@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { activeSessionId, setActiveSessionId } = useWorkoutStore();
+  const { activeSessionId, setActiveSessionId, logout } = useWorkoutStore();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [isStarting, setIsStarting] = useState(false);
 
@@ -42,9 +42,17 @@ export const Home: React.FC = () => {
 
   return (
     <div className="max-w-md mx-auto min-h-screen bg-gray-50 flex flex-col p-6">
-      <header className="mb-8 mt-4">
+      <header className="mb-8 mt-4 flex justify-between items-start">
         <h1 className="text-3xl font-bold text-gray-900">Workout<br />Tracker</h1>
+        <button 
+          onClick={() => { if (confirm('Are you sure you want to logout?')) logout(); }}
+          className="p-2 bg-gray-100 rounded-full text-gray-500 hover:bg-gray-200 active:bg-gray-300 transition-colors"
+          aria-label="Logout"
+        >
+          <LogOut size={20} />
+        </button>
       </header>
+
 
       <main className="flex-1 flex flex-col gap-8">
         <section>

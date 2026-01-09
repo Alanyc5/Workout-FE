@@ -153,14 +153,25 @@ export const SessionPage: React.FC = () => {
         // Close immediately
         setIsEditorOpen(false);
         
-        setSets(prev => prev.filter(s => s.id !== id)); // Optimistic delete
-        try {
-            await api.set.delete(id);
-        } catch {
-            alert('Delete failed');
-            // Revert
-        }
+        await handleQuickDeleteSet(id);
     }
+  }
+
+  const handleQuickDeleteSet = async (setId: string) => {
+    // Optimistic delete
+    const previousSets = sets;
+    setSets(prev => prev.filter(s => s.id !== setId)); 
+    
+    try {
+        await api.set.delete(setId);
+    } catch {
+        alert('Delete failed');
+        setSets(previousSets); // Revert on failure
+    }
+  }
+
+  const handleRemoveExercise = (exerciseId: string) => {
+    setManualExercises(prev => prev.filter(id => id !== exerciseId));
   }
 
   const handleCopyLast = async (exerciseId: string) => {
@@ -193,16 +204,23 @@ export const SessionPage: React.FC = () => {
 
   const finishSession = async () => {
     if (!activeSessionId) return;
-    if (confirm('Finish workout?')) {
-        try {
-            await api.session.end(activeSessionId);
-        } catch (e) {
-            console.error("無法更新後端 Session (可能已被刪除)，將強制結束本地 session", e);
-        } finally {
-            // 無論 API 成功或失敗，都清除本地狀態並回到首頁
-            setActiveSessionId(null);
-            navigate('/');
-        }
+    
+    // 檢查是否有任何運動
+    if (sets.length === 0) {
+      const confirmed = confirm('This workout has no exercises. It will not be saved to history. Continue?');
+      if (!confirmed) return;
+    } else {
+      if (!confirm('Finish workout?')) return;
+    }
+    
+    try {
+        await api.session.end(activeSessionId);
+    } catch (e) {
+        console.error("無法更新後端 Session (可能已被刪除)，將強制結束本地 session", e);
+    } finally {
+        // 無論 API 成功或失敗，都清除本地狀態並回到首頁
+        setActiveSessionId(null);
+        navigate('/');
     }
   }
 
@@ -228,6 +246,14 @@ export const SessionPage: React.FC = () => {
 
       {/* Content */}
       <main className="flex-1 p-4 pb-24 space-y-4">
+        {sets.length === 0 && displayBlocks.length === 0 && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <p className="text-sm text-yellow-800">
+              ⚠️ This workout will not be saved to history unless you add at least one exercise.
+            </p>
+          </div>
+        )}
+        
         {displayBlocks.length === 0 ? (
            <div className="h-64 flex flex-col items-center justify-center text-gray-400">
              <p>No exercises yet</p>
@@ -246,6 +272,8 @@ export const SessionPage: React.FC = () => {
                         onAddSet={() => openAddSet(ex.id)}
                         onCopyLastSet={() => handleCopyLast(ex.id)}
                         onEditSet={openEditSet}
+                        onDeleteSet={handleQuickDeleteSet}
+                        onRemoveExercise={() => handleRemoveExercise(ex.id)}
                         canCopy={block.sets.length > 0}
                     />
                 )

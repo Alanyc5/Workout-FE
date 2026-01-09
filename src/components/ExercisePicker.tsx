@@ -61,7 +61,6 @@ interface ExercisePickerProps {
 export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClose }) => {
   const [query, setQuery] = useState('');
   const [dbExercises, setDbExercises] = useState<Exercise[]>([]); // Existing DB exercises
-  const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
   
   // UI State
   const [lang, setLang] = useState<Lang>('tw'); // Default to Chinese first
@@ -71,8 +70,6 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
     // Load all exercises to check duplicates and show recent
     api.exercise.list().then(data => {
       setDbExercises(data);
-      // Backend usually sorts by lastUsedAt, take top 5
-      setRecentExercises(data.filter(e => e.lastUsedAt).slice(0, 5));
     });
   }, []);
 
@@ -204,22 +201,6 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
   const renderCategoryList = () => {
     return (
         <div className="space-y-1">
-            {recentExercises.length > 0 && (
-                <div className="mb-6">
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Recent</h3>
-                    {recentExercises.map(ex => (
-                        <button
-                        key={ex.id}
-                        onClick={() => onSelect(ex)}
-                        className="w-full text-left py-3 px-2 rounded-lg hover:bg-gray-50 flex items-center justify-between group"
-                        >
-                        <span className="font-medium text-gray-800">{ex.name}</span>
-                        <Clock size={14} className="text-gray-300" />
-                        </button>
-                    ))}
-                </div>
-            )}
-
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Categories</h3>
             {Object.keys(PRESET_CATEGORIES).map(key => {
                 const label = lang === 'tw' ? PRESET_CATEGORIES[key].tw : PRESET_CATEGORIES[key].en;
