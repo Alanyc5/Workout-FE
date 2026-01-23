@@ -1,17 +1,18 @@
 import React from 'react';
-import { Plus, Copy, Trash2 } from 'lucide-react';
-import { WorkoutSet, Exercise } from '../lib/types';
-import { cn } from '../lib/utils'; // I need to create utils for clsx/tailwind-merge
+import { Plus, Copy, Trash2, MessageSquare } from 'lucide-react';
+import { WorkoutSet, ExerciseWithSets } from '../lib/types';
+import { cn } from '../lib/utils';
 
 interface ExerciseCardProps {
-  exercise: Exercise;
+  exercise: ExerciseWithSets;
   sets: WorkoutSet[];
-  lastTimeSet?: string | null; // e.g. "40kg x 10"
+  lastTimeSet?: string | null;
   onAddSet: () => void;
   onCopyLastSet?: () => void;
   onEditSet: (set: WorkoutSet) => void;
   onDeleteSet?: (setId: string) => void;
   onRemoveExercise?: () => void;
+  onUpdateNote?: (note: string) => void;
   canCopy: boolean;
   readOnly?: boolean;
 }
@@ -25,18 +26,46 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   onEditSet,
   onDeleteSet,
   onRemoveExercise,
+  onUpdateNote,
   canCopy,
   readOnly
 }) => {
+  const handleNoteClick = () => {
+    if (readOnly || !onUpdateNote) return;
+    const newNote = prompt('Exercise Remark:', exercise.note || '');
+    if (newNote !== null) {
+      onUpdateNote(newNote);
+    }
+  };
+
+  const isCardio = exercise.type === 'cardio';
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
       <div className="flex justify-between items-start mb-3">
-        <div>
+        <div className="flex-1">
           <h3 className="font-bold text-lg text-gray-800">{exercise.name}</h3>
           <p className="text-xs text-gray-500 mt-1">
             {lastTimeSet ? `Last: ${lastTimeSet}` : 'No record'}
           </p>
+          {exercise.note && (
+            <p className="text-xs text-primary mt-1 flex items-center gap-1 bg-primary/5 p-1 px-2 rounded w-fit">
+              <MessageSquare size={12} />
+              {exercise.note}
+            </p>
+          )}
         </div>
+        {!readOnly && onUpdateNote && (
+          <button 
+            onClick={handleNoteClick}
+            className={cn(
+              "p-2 rounded-full transition-colors",
+              exercise.note ? "text-primary bg-primary/10" : "text-gray-300 bg-gray-50"
+            )}
+          >
+            <MessageSquare size={18} />
+          </button>
+        )}
       </div>
 
       <div className="space-y-2 mb-4">
@@ -51,10 +80,19 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
           >
             <span className="text-gray-400 font-mono text-sm w-8">#{set.orderInExercise}</span>
             <div className="flex-1 flex justify-center gap-1 font-semibold text-gray-800">
-              <span>{set.weight}</span>
-              <span className="text-gray-400 text-xs self-center">kg</span>
-              <span className="text-gray-400 mx-1">×</span>
-              <span>{set.reps}</span>
+              {isCardio ? (
+                <>
+                  <span>{set.duration}</span>
+                  <span className="text-gray-400 text-xs self-center">min</span>
+                </>
+              ) : (
+                <>
+                  <span>{set.weight}</span>
+                  <span className="text-gray-400 text-xs self-center">{set.unit}</span>
+                  <span className="text-gray-400 mx-1">×</span>
+                  <span>{set.reps}</span>
+                </>
+              )}
             </div>
             {!readOnly && onDeleteSet && (
               <button

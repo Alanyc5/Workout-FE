@@ -80,7 +80,10 @@ async function request<T>(
 export const api = {
   session: {
     start: () => request<Session>('/api/sessions', { method: 'POST' }),
-    end: (id: string) => request<Session>(`/api/sessions/${id}/end`, { method: 'PUT' }),
+    end: (id: string, note?: string) => request<Session>(`/api/sessions/${id}/end`, { 
+      method: 'PUT',
+      body: note ? { note } : undefined
+    }),
     delete: (id: string) => request<{ deleted: boolean }>(`/api/sessions/${id}`, { method: 'DELETE' }),
   },
   exercise: {
@@ -88,14 +91,19 @@ export const api = {
         method: 'GET',
         params: query ? { query } : undefined
     }),
-    create: (name: string) => request<Exercise>('/api/exercises', { 
+    create: (name: string, type: 'strength' | 'cardio' = 'strength') => request<Exercise>('/api/exercises', { 
         method: 'POST', 
-        body: { name } 
+        body: { name, type } 
     }),
     lastTime: (exerciseId: string, currentSessionId: string) => 
       request<WorkoutSet | null>(`/api/exercises/${exerciseId}/last-set`, { 
         method: 'GET',
         params: { currentSessionId }
+      }),
+    updateNote: (sessionId: string, exerciseId: string, note: string) =>
+      request<{ ok: boolean }>(`/api/sessions/${sessionId}/exercises/${exerciseId}/note`, {
+        method: 'PUT',
+        body: { note }
       }),
   },
   set: {
@@ -115,7 +123,10 @@ export const api = {
       }),
   },
   history: {
-    list: () => request<Session[]>('/api/history', { method: 'GET' }),
+    list: (userId?: string) => request<Session[]>('/api/history', { 
+      method: 'GET',
+      params: userId ? { userId } : undefined
+    }),
     detail: (id: string) => request<SessionDetail>(`/api/sessions/${id}`, { method: 'GET' }),
   }
 };

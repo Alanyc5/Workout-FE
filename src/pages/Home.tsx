@@ -6,22 +6,25 @@ import { useWorkoutStore } from '../lib/store';
 import { Session } from '../lib/types';
 import { format } from 'date-fns';
 
+const USER_COLORS: Record<string, string> = {
+  Alan: 'bg-green-100 text-green-700',
+  Peiya: 'bg-yellow-100 text-yellow-700',
+  Stanley: 'bg-[#5D4037]/10 text-[#5D4037]', // Coffee color
+};
+
 export const Home: React.FC = () => {
   const navigate = useNavigate();
   const { activeSessionId, setActiveSessionId, logout, currentUser } = useWorkoutStore();
   const [recentSessions, setRecentSessions] = useState<Session[]>([]);
   const [isStarting, setIsStarting] = useState(false);
+  const [filterUser, setFilterUser] = useState('All');
 
   useEffect(() => {
-    // Determine if we should redirect to session if active
-    // But maybe user wants to see home first.
-    // For MVP, if active, showing "Resume" is better.
-    
     // Fetch history (show more for team activity)
-    api.history.list()
+    api.history.list(filterUser === 'All' ? undefined : filterUser)
       .then(sessions => setRecentSessions(sessions.slice(0, 6)))
       .catch(console.error);
-  }, []);
+  }, [filterUser]);
 
   const handleStartSession = async () => {
     if (activeSessionId) {
@@ -83,6 +86,22 @@ export const Home: React.FC = () => {
             </button>
           </div>
 
+          <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar pb-1">
+            {['All', 'Alan', 'Peiya', 'Stanley'].map(user => (
+              <button
+                key={user}
+                onClick={() => setFilterUser(user)}
+                className={`px-4 py-1.5 rounded-full text-sm font-bold whitespace-nowrap transition-all ${
+                  filterUser === user 
+                    ? 'bg-primary text-white shadow-md' 
+                    : 'bg-white text-gray-500 border border-gray-200'
+                }`}
+              >
+                {user === 'All' ? 'All' : user}
+              </button>
+            ))}
+          </div>
+
           {recentSessions.length === 0 ? (
             <div className="text-center py-8 bg-white rounded-xl border border-dashed border-gray-300 text-gray-500">
               No team activity yet!
@@ -98,9 +117,7 @@ export const Home: React.FC = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-1 text-xs font-bold rounded-full ${
-                        session.userId === currentUser 
-                          ? 'bg-primary/10 text-primary' 
-                          : 'bg-gray-100 text-gray-600'
+                        USER_COLORS[session.userId || ''] || 'bg-gray-100 text-gray-600'
                       }`}>
                         {session.userId || 'Unknown'}
                       </span>

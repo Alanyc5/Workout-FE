@@ -9,6 +9,7 @@ export interface Session {
 export interface Exercise {
   id: string;
   name: string;
+  type: 'strength' | 'cardio';
   lastUsedAt: string | null;
 }
 
@@ -19,11 +20,14 @@ export interface WorkoutSet {
   orderInExercise: number;
   weight: number;
   reps: number;
+  unit: 'kg' | 'lb';
+  duration: number | null;
   isDeleted?: boolean;
 }
 
 export interface ExerciseWithSets extends Exercise {
   sets: WorkoutSet[];
+  note: string | null;
 }
 
 export interface SessionDetail extends Session {

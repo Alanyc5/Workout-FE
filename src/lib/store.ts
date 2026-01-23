@@ -6,6 +6,10 @@ interface WorkoutStore {
   activeSessionId: string | null;
   setActiveSessionId: (id: string | null) => void;
 
+  // Settings
+  unit: 'kg' | 'lb';
+  setUnit: (unit: 'kg' | 'lb') => void;
+
   // Auth state
   authCredentials: string | null;
   currentUser: string | null;
@@ -25,6 +29,9 @@ export const useWorkoutStore = create<WorkoutStore>()(
     (set) => ({
       activeSessionId: null,
       setActiveSessionId: (id) => set({ activeSessionId: id }),
+
+      unit: 'kg',
+      setUnit: (unit) => set({ unit }),
 
       authCredentials: null,
       currentUser: null,
@@ -49,7 +56,8 @@ export const useWorkoutStore = create<WorkoutStore>()(
       partialize: (state) => ({ 
         activeSessionId: state.activeSessionId,
         authCredentials: state.authCredentials,
-        currentUser: state.currentUser
+        currentUser: state.currentUser,
+        unit: state.unit,
       }), 
     }
   )

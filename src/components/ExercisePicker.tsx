@@ -18,6 +18,7 @@ const PRESET_CATEGORIES: Record<string, PresetItem> = {
   Legs: { en: 'Legs', tw: '腿部' },
   Shoulders: { en: 'Shoulders', tw: '肩部' },
   Arms: { en: 'Arms', tw: '手臂' },
+  Cardio: { en: 'Cardio', tw: '有氧' },
 };
 
 const PRESETS: Record<string, PresetItem[]> = {
@@ -48,6 +49,12 @@ const PRESETS: Record<string, PresetItem[]> = {
   Arms: [
     { en: 'Bicep Curl', tw: '二頭彎舉' },
     { en: 'Tricep Pushdown', tw: '三頭下壓' },
+  ],
+  Cardio: [
+    { en: 'Treadmill', tw: '跑步機' },
+    { en: 'Stationary Bike', tw: '飛輪' },
+    { en: 'Elliptical', tw: '橢圓機' },
+    { en: 'Rowing Machine', tw: '划船機' },
   ]
 };
 
@@ -87,8 +94,9 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
   };
 
   // Logic to handle picking a preset
-  const handleSelectPreset = async (item: PresetItem) => {
+  const handleSelectPreset = async (item: PresetItem, categoryKey: string) => {
     const dbName = getCanonicalName(item); // Always search/create using the standard name
+    const type = categoryKey === 'Cardio' ? 'cardio' : 'strength';
     
     // 1. Check if the canonical name exists in DB
     const existing = dbExercises.find(e => e.name === dbName);
@@ -99,7 +107,6 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
     }
 
     // 2. Extra safety: Check if the "flipped" name exists (legacy data support)
-    // In case older data has "Barbell Press (槓鈴臥推)"
     const legacyName = `${item.en} (${item.tw})`;
     const existingLegacy = dbExercises.find(e => e.name === legacyName);
     if (existingLegacy) {
@@ -109,7 +116,7 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
     
     // 3. Create new using the CANONICAL name
     try {
-      const newEx = await api.exercise.create(dbName);
+      const newEx = await api.exercise.create(dbName, type);
       onSelect(newEx);
     } catch (e) {
       alert('Failed to create exercise');
@@ -119,7 +126,7 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
   const handleCreateCustom = async () => {
     if (!query) return;
     try {
-      const newEx = await api.exercise.create(query);
+      const newEx = await api.exercise.create(query, 'strength');
       onSelect(newEx);
     } catch (e) {
       alert('Failed to create exercise');
@@ -235,7 +242,7 @@ export const ExercisePicker: React.FC<ExercisePickerProps> = ({ onSelect, onClos
                   {items.map((item, idx) => (
                       <button
                         key={idx}
-                        onClick={() => handleSelectPreset(item)}
+                        onClick={() => handleSelectPreset(item, categoryKey)}
                         className="w-full text-left py-3 px-3 rounded-xl bg-white border border-gray-100 shadow-sm mb-2 hover:border-primary/50 active:bg-gray-50 transition-colors"
                       >
                           <span className="font-medium text-gray-800 text-base">{formatDisplayName(item)}</span>

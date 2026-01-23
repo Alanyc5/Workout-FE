@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, CheckCircle2 } from 'lucide-react';
 import { useWorkoutStore } from '../lib/store';
 import { api } from '../lib/api';
-import { WorkoutSet, Exercise } from '../lib/types';
+import { WorkoutSet, Exercise, ExerciseWithSets } from '../lib/types';
 import { ExerciseCard } from '../components/ExerciseCard';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { SetEditorSheet } from '../components/SetEditorSheet';
@@ -13,11 +13,15 @@ export const SessionPage: React.FC = () => {
   const { activeSessionId, setActiveSessionId } = useWorkoutStore();
   
   const [sets, setSets] = useState<WorkoutSet[]>([]);
-  const [exercises, setExercises] = useState<Record<string, Exercise>>({});
-  const [lastTimes, setLastTimes] = useState<Record<string, string>>({}); // exerciseId -> "40 kg x 10"
+  const [exercises, setExercises] = useState<Record<string, ExerciseWithSets>>({});
+  const [lastTimes, setLastTimes] = useState<Record<string, { weight: number; reps: number; unit: string; duration: number | null }>>({}); // exerciseId -> data
   
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [editingSet, setEditingSet] = useState<{ set: WorkoutSet | null, mode: 'create' | 'edit', defaults?: {weight: number, reps: number, exerciseId: string} }>({ set: null, mode: 'create' });
+  const [editingSet, setEditingSet] = useState<{ 
+    set: WorkoutSet | null, 
+    mode: 'create' | 'edit', 
+    defaults?: { weight: number, reps: number, unit: 'kg' | 'lb', duration: number | null, exerciseId: string } 
+  }>({ set: null, mode: 'create' });
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   useEffect(() => {
@@ -31,9 +35,9 @@ export const SessionPage: React.FC = () => {
         const detail = await api.history.detail(activeSessionId);
         setSets(detail.sets);
         
-        const exMap: Record<string, Exercise> = {};
+        const exMap: Record<string, ExerciseWithSets> = {};
         detail.exercises.forEach(ex => {
-          exMap[ex.id] = { id: ex.id, name: ex.name, lastUsedAt: ex.lastUsedAt };
+          exMap[ex.id] = ex;
           fetchLastTime(ex.id);
         });
         setExercises(exMap);
@@ -49,7 +53,15 @@ export const SessionPage: React.FC = () => {
     try {
       const lastSet = await api.exercise.lastTime(exerciseId, activeSessionId);
       if (lastSet) {
-        setLastTimes(prev => ({ ...prev, [exerciseId]: `${lastSet.weight}kg × ${lastSet.reps}` }));
+        setLastTimes(prev => ({ 
+          ...prev, 
+          [exerciseId]: { 
+            weight: lastSet.weight, 
+            reps: lastSet.reps, 
+            unit: lastSet.unit,
+            duration: lastSet.duration
+          } 
+        }));
       }
     } catch { /* ignore */ }
   };
@@ -72,6 +84,7 @@ export const SessionPage: React.FC = () => {
   }, [sets]);
   
   const [manualExercises, setManualExercises] = useState<string[]>([]);
+  const [sessionNote, setSessionNote] = useState('');
   
   const displayBlocks = useMemo(() => {
     const existing = new Set(groupedSets.map(g => g.exerciseId));
@@ -81,7 +94,8 @@ export const SessionPage: React.FC = () => {
 
 
   const handleAddExercise = (ex: Exercise) => {
-    setExercises(prev => ({ ...prev, [ex.id]: ex }));
+    const exWithSets: ExerciseWithSets = { ...ex, sets: [], note: null };
+    setExercises(prev => ({ ...prev, [ex.id]: exWithSets }));
     setManualExercises(prev => [...prev, ex.id]);
     setIsPickerOpen(false);
     fetchLastTime(ex.id);
@@ -90,15 +104,18 @@ export const SessionPage: React.FC = () => {
   const openAddSet = (exerciseId: string) => {
     // Determine default weight/reps from last set of this exercise
     const exSets = sets.filter(s => s.exerciseId === exerciseId);
-    const lastSet = exSets[exSets.length - 1];
+    const lastSetInSession = exSets[exSets.length - 1];
+    const historicalLastTime = lastTimes[exerciseId];
     
     setEditingSet({
       mode: 'create',
       set: null,
       defaults: {
         exerciseId,
-        weight: lastSet ? lastSet.weight : 0, // Could default to 0 or last time
-        reps: lastSet ? lastSet.reps : 0
+        weight: lastSetInSession ? lastSetInSession.weight : (historicalLastTime?.weight || 0),
+        reps: lastSetInSession ? lastSetInSession.reps : (historicalLastTime?.reps || 0),
+        unit: lastSetInSession ? lastSetInSession.unit : (historicalLastTime?.unit as any || 'kg'),
+        duration: lastSetInSession ? lastSetInSession.duration : (historicalLastTime?.duration || 0)
       }
     });
     setIsEditorOpen(true);
@@ -112,8 +129,9 @@ export const SessionPage: React.FC = () => {
     setIsEditorOpen(true);
   };
 
-  const handleSaveSet = async (weight: number, reps: number) => {
+  const handleSaveSet = async (data: { weight: number; reps: number; unit: 'kg' | 'lb'; duration: number | null }) => {
     if (!activeSessionId) return;
+    const { weight, reps, unit, duration } = data;
 
     // Close immediately for better UX (Optimistic UI)
     setIsEditorOpen(false);
@@ -129,21 +147,36 @@ export const SessionPage: React.FC = () => {
           exerciseId,
           orderInExercise: (sets.filter(s => s.exerciseId === exerciseId).length) + 1,
           weight,
-          reps
+          reps,
+          unit,
+          duration
         };
         setSets(prev => [...prev, newSet]); // optimistic
         
-        const created = await api.set.create({ sessionId: activeSessionId, exerciseId, weight, reps });
+        const created = await api.set.create({ sessionId: activeSessionId, exerciseId, weight, reps, unit, duration });
         setSets(prev => prev.map(s => s.id === tempId ? created : s));
 
       } else if (editingSet.mode === 'edit' && editingSet.set) {
         const { id } = editingSet.set;
-        setSets(prev => prev.map(s => s.id === id ? { ...s, weight, reps } : s));
-        await api.set.update(id, { weight, reps });
+        setSets(prev => prev.map(s => s.id === id ? { ...s, weight, reps, unit, duration } : s));
+        await api.set.update(id, { weight, reps, unit, duration });
       }
     } catch (e) {
       alert('Save failed');
       // Revert optimistic if needed (skipped for MVP/simplicity)
+    }
+  };
+
+  const handleUpdateNote = async (exerciseId: string, note: string) => {
+    if (!activeSessionId) return;
+    setExercises(prev => ({
+      ...prev,
+      [exerciseId]: { ...prev[exerciseId], note }
+    }));
+    try {
+      await api.exercise.updateNote(activeSessionId, exerciseId, note);
+    } catch (e) {
+      alert('Failed to save note');
     }
   };
 
@@ -181,8 +214,7 @@ export const SessionPage: React.FC = () => {
     if (!last) return;
 
     // Create logic
-    const weight = last.weight;
-    const reps = last.reps;
+    const { weight, reps, unit, duration } = last;
     const tempId = 'temp_copy_' + Date.now();
     const newSet: WorkoutSet = {
       id: tempId,
@@ -190,12 +222,14 @@ export const SessionPage: React.FC = () => {
       exerciseId,
       orderInExercise: exSets.length + 1,
       weight,
-      reps
+      reps,
+      unit,
+      duration
     };
     setSets(prev => [...prev, newSet]);
     
     try {
-        const created = await api.set.create({ sessionId: activeSessionId, exerciseId, weight, reps });
+        const created = await api.set.create({ sessionId: activeSessionId, exerciseId, weight, reps, unit, duration });
         setSets(prev => prev.map(s => s.id === tempId ? created : s));
     } catch (e) {
         // revert
@@ -214,7 +248,7 @@ export const SessionPage: React.FC = () => {
     }
     
     try {
-        await api.session.end(activeSessionId);
+        await api.session.end(activeSessionId, sessionNote);
     } catch (e) {
         console.error("無法更新後端 Session (可能已被刪除)，將強制結束本地 session", e);
     } finally {
@@ -268,12 +302,13 @@ export const SessionPage: React.FC = () => {
                         key={block.exerciseId}
                         exercise={ex}
                         sets={block.sets}
-                        lastTimeSet={lastTimes[ex.id]}
+                        lastTimeSet={lastTimes[ex.id] ? (ex.type === 'cardio' ? `${lastTimes[ex.id].duration} min` : `${lastTimes[ex.id].weight}${lastTimes[ex.id].unit} × ${lastTimes[ex.id].reps}`) : null}
                         onAddSet={() => openAddSet(ex.id)}
                         onCopyLastSet={() => handleCopyLast(ex.id)}
                         onEditSet={openEditSet}
                         onDeleteSet={handleQuickDeleteSet}
                         onRemoveExercise={() => handleRemoveExercise(ex.id)}
+                        onUpdateNote={(note) => handleUpdateNote(ex.id, note)}
                         canCopy={block.sets.length > 0}
                     />
                 )
@@ -287,6 +322,16 @@ export const SessionPage: React.FC = () => {
             <Plus size={20} />
             Add Exercise
         </button>
+
+        <div className="mt-8">
+            <label className="block text-sm font-bold text-gray-700 mb-2">Workout Note</label>
+            <textarea
+              value={sessionNote}
+              onChange={(e) => setSessionNote(e.target.value)}
+              placeholder="How was your workout today?"
+              className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+            />
+        </div>
       </main>
 
       {/* Overlays */}
@@ -303,6 +348,9 @@ export const SessionPage: React.FC = () => {
         mode={editingSet.mode}
         initialWeight={editingSet.mode === 'create' ? editingSet.defaults?.weight : editingSet.set?.weight}
         initialReps={editingSet.mode === 'create' ? editingSet.defaults?.reps : editingSet.set?.reps}
+        initialUnit={editingSet.mode === 'create' ? editingSet.defaults?.unit : editingSet.set?.unit}
+        initialDuration={editingSet.mode === 'create' ? editingSet.defaults?.duration : editingSet.set?.duration}
+        exerciseType={editingSet.mode === 'create' ? (exercises[editingSet.defaults?.exerciseId || '']?.type) : (exercises[editingSet.set?.exerciseId || '']?.type)}
         onSave={handleSaveSet}
         onDelete={handleDeleteSet}
       />
