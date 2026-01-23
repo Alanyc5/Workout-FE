@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
-import { WorkoutSet, Exercise } from '../lib/types';
+import { WorkoutSet, ExerciseWithSets } from '../lib/types';
 import { format } from 'date-fns';
 import { ExerciseCard } from '../components/ExerciseCard';
 
@@ -10,16 +10,16 @@ export const HistoryDetail: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const [sets, setSets] = useState<WorkoutSet[]>([]);
-    const [exercises, setExercises] = useState<Record<string, Exercise>>({});
+    const [exercises, setExercises] = useState<Record<string, ExerciseWithSets>>({});
     const [dateStr, setDateStr] = useState('');
 
     useEffect(() => {
         if (!sessionId) return;
         api.history.detail(sessionId).then(detail => {
             setSets(detail.sets);
-            const exMap: Record<string, Exercise> = {};
+            const exMap: Record<string, ExerciseWithSets> = {};
             detail.exercises.forEach(ex => {
-                exMap[ex.id] = { id: ex.id, name: ex.name, lastUsedAt: ex.lastUsedAt };
+                exMap[ex.id] = ex;
             });
             setExercises(exMap);
             setDateStr(detail.startAt);
