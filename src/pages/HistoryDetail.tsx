@@ -6,12 +6,20 @@ import { WorkoutSet, ExerciseWithSets } from '../lib/types';
 import { format } from 'date-fns';
 import { ExerciseCard } from '../components/ExerciseCard';
 
+const USER_COLORS: Record<string, string> = {
+  Alan: 'bg-green-100 text-green-700',
+  Peiya: 'bg-yellow-100 text-yellow-700',
+  Stanley: 'bg-[#5D4037]/10 text-[#5D4037]', // Coffee color
+};
+
 export const HistoryDetail: React.FC = () => {
     const { sessionId } = useParams<{ sessionId: string }>();
     const navigate = useNavigate();
     const [sets, setSets] = useState<WorkoutSet[]>([]);
     const [exercises, setExercises] = useState<Record<string, ExerciseWithSets>>({});
     const [dateStr, setDateStr] = useState('');
+    const [userId, setUserId] = useState('');
+    const [sessionNote, setSessionNote] = useState<string | null>(null);
 
     useEffect(() => {
         if (!sessionId) return;
@@ -22,6 +30,8 @@ export const HistoryDetail: React.FC = () => {
                 exMap[ex.id] = ex;
             });
             setExercises(exMap);
+            setUserId(detail.userId);
+            setSessionNote(detail.note);
             setDateStr(detail.startAt);
         }).catch(console.error);
     }, [sessionId]);
@@ -62,9 +72,16 @@ export const HistoryDetail: React.FC = () => {
                     <ArrowLeft size={20} />
                 </button>
                 <div className="flex-1">
-                   <h1 className="font-bold text-lg text-gray-800">
-                       {dateStr ? format(new Date(dateStr), 'MMM d, yyyy') : 'Loading...'}
-                   </h1>
+                   <div className="flex items-center gap-2">
+                       <h1 className="font-bold text-lg text-gray-800">
+                           {dateStr ? format(new Date(dateStr), 'MMM d, yyyy') : 'Loading...'}
+                       </h1>
+                       {userId && (
+                         <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${USER_COLORS[userId] || 'bg-gray-100 text-gray-600'}`}>
+                           {userId}
+                         </span>
+                       )}
+                   </div>
                    <p className="text-xs text-gray-500">
                        {dateStr ? format(new Date(dateStr), 'HH:mm') : ''}
                    </p>
@@ -79,6 +96,20 @@ export const HistoryDetail: React.FC = () => {
             </header>
             
             <main className="flex-1 p-4 space-y-4">
+                {sessionNote && (
+                  <div className="relative mx-2 my-6 p-6 bg-[#FEF9C3] shadow-[5px_5px_10px_rgba(0,0,0,0.08)] rotate-[-1.5deg] border-b border-r border-yellow-200">
+                    {/* 裝飾性膠帶效果 */}
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-20 h-7 bg-white/40 backdrop-blur-[1px] rotate-2 shadow-sm border border-white/30" />
+                    
+                    <h2 className="text-[10px] font-bold text-yellow-800/40 mb-2 uppercase tracking-[0.2em]">Workout Note</h2>
+                    <p className="text-yellow-950 font-medium leading-relaxed whitespace-pre-wrap italic text-sm">
+                      {sessionNote}
+                    </p>
+                    
+                    {/* 右下角摺角陰影感 */}
+                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-gradient-to-tl from-black/5 to-transparent pointer-events-none" />
+                  </div>
+                )}
                 {displayBlocks.map(block => {
                     const ex = exercises[block.exerciseId];
                     if (!ex) return null;

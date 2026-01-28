@@ -5,6 +5,7 @@ import { api } from '../lib/api';
 import { useWorkoutStore } from '../lib/store';
 import { Session } from '../lib/types';
 import { format } from 'date-fns';
+import { MotivationBoard } from '../components/MotivationBoard';
 
 const USER_COLORS: Record<string, string> = {
   Alan: 'bg-green-100 text-green-700',
@@ -72,6 +73,10 @@ export const Home: React.FC = () => {
             {isStarting ? <Loader2 className="animate-spin" /> : <Play fill="currentColor" />}
             {activeSessionId ? 'Resume Workout' : (isStarting ? 'Starting...' : 'Start Workout')}
           </button>
+        </section>
+
+        <section>
+            <MotivationBoard />
         </section>
 
         <section>

@@ -34,3 +34,11 @@ export interface SessionDetail extends Session {
   exercises: ExerciseWithSets[]; // Computed or joined in frontend
   sets: WorkoutSet[]; // Raw sets
 }
+
+export interface Motivation {
+  id: string;
+  userId: string;
+  message: string;
+  createdAt: string;
+  reactions: Record<string, string[]>; // emoji -> array of userIds
+}

@@ -5,6 +5,12 @@ import { api } from '../lib/api';
 import { Session } from '../lib/types';
 import { format } from 'date-fns';
 
+const USER_COLORS: Record<string, string> = {
+  Alan: 'bg-green-100 text-green-700',
+  Peiya: 'bg-yellow-100 text-yellow-700',
+  Stanley: 'bg-[#5D4037]/10 text-[#5D4037]', // Coffee color
+};
+
 export const HistoryList: React.FC = () => {
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -55,9 +61,14 @@ export const HistoryList: React.FC = () => {
                     <Calendar size={20} />
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800">
-                      {format(new Date(session.startAt), 'MMM d, yyyy')}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-bold text-gray-800">
+                        {format(new Date(session.startAt), 'MMM d, yyyy')}
+                      </p>
+                      <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${USER_COLORS[session.userId] || 'bg-gray-100 text-gray-600'}`}>
+                        {session.userId}
+                      </span>
+                    </div>
                     <p className="text-xs text-gray-500">
                       {format(new Date(session.startAt), 'HH:mm')}
                     </p>

@@ -1,4 +1,4 @@
-import { Session, Exercise, WorkoutSet, SessionDetail } from './types';
+import { Session, Exercise, WorkoutSet, SessionDetail, Motivation } from './types';
 import { useWorkoutStore } from './store';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -121,8 +121,15 @@ export const api = {
       request<{ deleted: boolean }>(`/api/sets/${id}`, { 
         method: 'DELETE'
       }),
-  },
-  history: {
+  },  motivation: {
+    list: () => request<Motivation[]>('/api/motivations', { method: 'GET' }),
+    create: (message: string) => request<Motivation>('/api/motivations', { 
+      method: 'POST', body: { message } 
+    }),
+    react: (id: string, emoji: string) => request<Record<string, string[]>>(`/api/motivations/${id}/react`, {
+      method: 'POST', body: { emoji }
+    }),
+  },  history: {
     list: (userId?: string) => request<Session[]>('/api/history', { 
       method: 'GET',
       params: userId ? { userId } : undefined

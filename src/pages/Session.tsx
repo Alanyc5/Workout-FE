@@ -329,7 +329,7 @@ export const SessionPage: React.FC = () => {
               value={sessionNote}
               onChange={(e) => setSessionNote(e.target.value)}
               placeholder="How was your workout today?"
-              className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+              className="w-full h-32 p-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary/20 text-base"
             />
         </div>
       </main>
